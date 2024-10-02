@@ -19,9 +19,7 @@ class TestRoutes(TestCase):
         cls.reader = User.objects.create(username='Читатель простой')
 
     def test_pages_availability(self):
-        """
-        Проверяет доступность основных страниц для анонимных пользователей.
-        """
+        """Доступность основных страниц для анонимных пользователей."""
         urls = (
             ('notes:home', None),
             ('notes:detail', (self.note.slug,)),
