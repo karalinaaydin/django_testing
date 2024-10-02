@@ -26,9 +26,10 @@ class TestContent(TestCase):
         списка заметок в object_list.
         """
         url = reverse('notes:list')
+        self.client.force_login(self.user1)
         response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
         self.assertIn(self.note1, response.context['object_list'])
-        self.assertIn(self.note2, response.context['object_list'])
 
     def test_user_notes_dont_include_other_users_notes(self):
         """
@@ -49,7 +50,7 @@ class TestContent(TestCase):
         self.client.force_login(self.user1)
         urls = (
             ('notes:add', None),
-            ('notes:edit', (self.note.slug,)),
+            ('notes:edit', (self.note1.slug,)),
         )
         for name, args in urls:
             url = reverse(name, args=args)

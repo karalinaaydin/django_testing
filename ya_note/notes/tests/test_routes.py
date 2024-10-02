@@ -14,9 +14,11 @@ class TestRoutes(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Подготовка данных для всех тестов."""
-        cls.note = Note.objects.create(title='Заголовок', text='Текст')
         cls.author = User.objects.create(username='Лев Толстой')
         cls.reader = User.objects.create(username='Читатель простой')
+        cls.note = Note.objects.create(title='Заголовок',
+                                       text='Текст',
+                                       author=cls.author)
 
     def test_pages_availability(self):
         """Доступность основных страниц для анонимных пользователей."""
@@ -31,7 +33,10 @@ class TestRoutes(TestCase):
             with self.subTest(name=name):
                 url = reverse(name, args=args)
                 response = self.client.get(url)
-                self.assertEqual(response.status_code, HTTPStatus.OK)
+                if name == 'notes:detail':
+                    self.assertEqual(response.status_code, HTTPStatus.FOUND)
+                else:
+                    self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_redirect_for_anonymous_client(self):
         """
