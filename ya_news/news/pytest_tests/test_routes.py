@@ -6,11 +6,11 @@ from pytest_django.asserts import assertRedirects
 
 
 @pytest.mark.parametrize(
-    'name, args',
-    (('notes:home', None),
-     ('users:login', None),
-     ('users:logout', None),
-     ('users:signup', None),
+    'name',
+    ('notes:home',
+     'users:login',
+     'users:logout',
+     'users:signup',
      )
 )
 def test_pages_availability_for_anonymous_user(client, name):
