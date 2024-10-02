@@ -5,9 +5,10 @@ from django.urls import reverse
 from pytest_django.asserts import assertRedirects
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     'name',
-    ('notes:home',
+    ('news:home',
      'users:login',
      'users:logout',
      'users:signup',
@@ -37,9 +38,9 @@ def test_news_detail_page_accessible_for_anonymous_user(client, news):
     ('news:delete', 'news:edit'),
 )
 def test_pages_availability_for_different_users(
-        parametrized_client, name, news, expected_status
+        parametrized_client, name, comment, expected_status
 ):
-    url = reverse(name, args=(news.id,))
+    url = reverse(name, args=(comment.id,))
     response = parametrized_client.get(url)
     assert response.status_code == expected_status
 

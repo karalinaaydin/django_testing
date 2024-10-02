@@ -38,13 +38,35 @@ def news(db):
 
 
 @pytest.fixture
-def comment(author):
+def news_items(db):
+    for i in range(10):
+        News.objects.create(
+            title=f'Заголовок новости {i}',
+            text=f'Текст новости {i}',
+        )
+
+
+@pytest.fixture
+def comment(author, news):
     comment = Comment.objects.create(
         text='Текст тестового комментария',
-        author=author_client.user,
+        author=author,
         news=news
     )
     return comment
+
+
+@pytest.fixture
+def comments(news, author):
+    comments = [
+        Comment.objects.create(text='Первый комментарий', news=news,
+                               author=author, created='2024-01-01 10:00:00'),
+        Comment.objects.create(text='Второй комментарий', news=news,
+                               author=author, created='2024-01-01 12:00:00'),
+        Comment.objects.create(text='Третий комментарий', news=news,
+                               author=author, created='2024-01-01 14:00:00'),
+    ]
+    return comments
 
 
 @pytest.fixture
