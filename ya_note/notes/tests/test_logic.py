@@ -7,6 +7,7 @@ from pytils.translit import slugify as pytils_slugify
 
 User = get_user_model()
 
+
 class TestNoteLogic(TestCase):
 
     @classmethod
@@ -43,11 +44,11 @@ class TestNoteLogic(TestCase):
         SAME_SLUG = 'zametka_1'
         self.client.force_login(self.user1)
         Note.objects.create(
-                         title='Заметка 1',
-                         text='Текст 1',
-                         slug=SAME_SLUG,
-                         author=self.user1
-                         )
+            title='Заметка 1',
+            text='Текст 1',
+            slug=SAME_SLUG,
+            author=self.user1
+        )
         self.assertTrue(Note.objects.filter(slug='zametka-1').exists())
         with self.assertRaises(IntegrityError):
             Note.objects.create(title='Заметка 1 (дубликат)',
@@ -88,7 +89,7 @@ class TestNoteLogic(TestCase):
         self.assertFalse(Note.objects.filter
                          (id=self.note.id).exists()
                          )
-        
+
     def test_user_cannot_edit_or_delete_others_note(self):
         """
         Тестирует, что пользователь не может

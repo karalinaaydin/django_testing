@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from notes.models import Comment, Note
+from notes.models import Note
 
 User = get_user_model()
 
@@ -19,7 +19,9 @@ class TestRoutes(TestCase):
         cls.reader = User.objects.create(username='Читатель простой')
 
     def test_pages_availability(self):
-        """Проверяет доступность основных страниц для анонимных пользователей."""
+        """
+        Проверяет доступность основных страниц для анонимных пользователей.
+        """
         urls = (
             ('notes:home', None),
             ('notes:detail', (self.note.slug,)),
@@ -35,7 +37,7 @@ class TestRoutes(TestCase):
 
     def test_redirect_for_anonymous_client(self):
         """
-        Проверяет, что анонимные пользователи 
+        Проверяет, что анонимные пользователи
         перенаправляются на страницу входа.
         """
         login_url = reverse('users:login')

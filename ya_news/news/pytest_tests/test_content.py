@@ -1,10 +1,5 @@
 import pytest
-from pytest_lazyfixture import lazy_fixture
-from http import HTTPStatus
 from django.urls import reverse
-from django.utils import timezone
-from news.models import News, Comment  # Измените импорт, если это необходимо
-from django.contrib.auth import get_user_model
 
 
 @pytest.mark.parametrize(

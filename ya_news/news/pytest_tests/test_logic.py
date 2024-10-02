@@ -6,6 +6,7 @@ from django.urls import reverse
 from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 
+
 @pytest.mark.django_db
 def test_anonymous_user_cannot_post_comment(client, news, form_data):
     """
@@ -76,7 +77,8 @@ def test_user_cannot_delete_another_users_comment(not_author_client,
                                                   comment, name):
     """
     Авторизованный пользователь не может удалять
-    и редактировать чужие комментарии."""
+    и редактировать чужие комментарии.
+    """
     url = reverse(name, args=[comment.id])
     response = not_author_client.post(url)
     assert response.status_code == HTTPStatus.NOT_FOUND

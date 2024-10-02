@@ -12,11 +12,12 @@ from pytest_django.asserts import assertRedirects
      ('users:logout', None),
      ('users:signup', None),
      )
-     )
+)
 def test_pages_availability_for_anonymous_user(client, name):
     url = reverse(name)
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
+
 
 def test_news_detail_page_accessible_for_anonymous_user(client, news):
     url = reverse('news:detail', args=[news.id])
@@ -25,12 +26,12 @@ def test_news_detail_page_accessible_for_anonymous_user(client, news):
 
 
 @pytest.mark.parametrize(
-    'parametrized_client, expected_status', 
+    'parametrized_client, expected_status',
     (
         (pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
         (pytest.lazy_fixture('author_client'), HTTPStatus.OK)
-     )
-     )
+    )
+)
 @pytest.mark.parametrize(
     'name',
     ('news:delete', 'news:edit'),

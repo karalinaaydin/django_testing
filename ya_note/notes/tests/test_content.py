@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-
 from notes.models import Note
 
 User = get_user_model()
@@ -51,7 +50,7 @@ class TestContent(TestCase):
         urls = (
             ('notes:add', None),
             ('notes:edit', (self.note.slug,)),
-            )
+        )
         for name, args in urls:
             url = reverse(name, args=args)
             response = self.client.get(url)
