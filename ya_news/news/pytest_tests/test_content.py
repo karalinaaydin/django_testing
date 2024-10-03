@@ -1,76 +1,76 @@
 import pytest
+
+from django.conf import settings
 from django.urls import reverse
 
 from news.forms import CommentForm
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    'name, expected_count',
-    (
-        ('news:home', 10),
-    )
-)
-def test_homepage_shows_maximum_of_10_news(client, name,
-                                           expected_count, news_items):
+pytestmark = pytest.mark.django_db
+
+
+def test_max_news_count_on_homepage(client, news_items, urls):
     """
     Тестирует, что на главной странице
     показывается не более 10 новостных элементов.
     """
-    url = reverse(name)
+    url = urls['home']
     response = client.get(url)
-    object_list = response.context['object_list']
-    assert len(object_list) == expected_count
+    assert len(response.context['object_list']) == (settings
+                                                    .NEWS_COUNT_ON_HOME_PAGE)
 
 
-@pytest.mark.django_db
-def test_news_sorted_by_pub_date_desc(client):
+def test_news_sorted_by_pub_date_desc(client, urls):
     """
     Тестирует, что новости отсортированы
     от самых новых к самым старым на главной странице.
     """
-    url = reverse('news:home')
+    url = urls['home']
     response = client.get(url)
-    object_list = response.context['object_list']
-    news_dates = [news.date for news in object_list]
-    assert news_dates == sorted(news_dates, reverse=True)
+    news_objects = response.context['object_list']
+    news_dates = [news.date for news in news_objects]
+    assert [news.date for news in news_objects] == (sorted
+                                                    (news_dates, reverse=True)
+                                                    )
 
 
-def test_comments_sorted_by_creation_asc(client, news, comments):
+def test_comments_sorted_by_creation_asc(client, news, comments, urls):
     """
     Тестирует, что комментарии на странице новости отсортированы
     по возрастанию времени создания.
     """
-    url = reverse('news:detail', args=[news.id])
+    url = urls['news_detail']
     response = client.get(url)
-    comments_from_context = response.context['news'].comment_set.all()
-    comment_dates_from_context = [comment.created
-                                  for comment in comments_from_context
-                                  ]
+    
+    # Get comments from context
+    comments_from_context = response.context['news'].comment_set.all()  # This should respect the ordering
+    
+    # Extract the created timestamps
+    comment_dates_from_context = [comment.created for comment in comments_from_context]
     expected_comment_dates = sorted([comment.created for comment in comments])
+    
     assert comment_dates_from_context == expected_comment_dates
 
 
-@pytest.mark.parametrize(
-    'parametrized_client, form_expected',
-    (
-        (pytest.lazy_fixture('client'), False),
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('not_author_client'), True)
-    )
-)
-def test_comment_form_visibility(parametrized_client, request,
-                                 news, form_expected):
+def test_comment_form_visible_for_authorized_client(author_client, news, urls):
     """
-    Тестирует, что форма комментариев доступна для авторизованных
-    пользователей и недоступна для анонимных.
+    Тестирует, что форма комментариев
+    доступна для авторизованных пользователей.
     """
-    url = reverse('news:detail', args=[news.id])
+    url = urls['news_detail']
+    response = author_client.get(url)
 
-    response = parametrized_client.get(url)
+    form = response.context.get('form')
+    assert form is not None
+    assert isinstance(form, CommentForm)
 
-    if form_expected:
-        assert 'form' in response.context
-        assert isinstance(response.context['form'], CommentForm)
-    else:
-        assert 'form' not in response.context
+
+def test_comment_form_not_visible_for_anonymous_client(client, news, urls):
+    """
+    Тестирует, что форма комментариев недоступна
+    для анонимных пользователей.
+    """
+    url = urls['news_detail']
+    response = client.get(url)
+
+    assert 'form' not in response.context

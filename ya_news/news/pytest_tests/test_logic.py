@@ -1,86 +1,122 @@
 from http import HTTPStatus
 
 import pytest
-from django.urls import reverse
 
 from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 
 
-@pytest.mark.django_db
-def test_anonymous_user_cannot_post_comment(client, news, form_data):
+pytestmark = pytest.mark.django_db
+
+
+FORM_DATA = {
+    'text': 'Текст комментария',
+}
+
+
+def test_anonymous_user_cannot_post_comment(client, news, urls):
     """
     Анонимный пользователь не может отправить комментарий
     на странице новости.
     """
-    url = reverse('news:detail', args=[news.id])
-    response = client.post(url, data=form_data)
+    url = urls['news_detail']
+    Comment.objects.filter(news=news).delete()
+    response = client.post(url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
-    assert not (Comment.objects
-                .filter(text=form_data['text'], news=news)
-                .exists())
+    assert Comment.objects.filter(news=news).count() == 0
 
 
-@pytest.mark.django_db
-def test_authenticated_user_can_post_comment(author_client, news, form_data):
+def test_authenticated_user_can_post_comment(author_client, author, news, urls):
+
     """
     Авторизованный пользователь может отправить комментарий
     на странице новости.
     """
-    url = reverse('news:detail', args=[news.id])
-    response = author_client.post(url, data=form_data)
+    url = urls['news_detail']
+    Comment.objects.filter(news=news).delete()
+    response = author_client.post(url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
-    assert (Comment.objects
-            .filter(text=form_data['text'], news=news)
-            .exists())
+    assert Comment.objects.filter(news=news).count() == 1
+
+    comment = Comment.objects.first()
+    assert comment.author == author
+    assert comment.news == news
+    assert comment.text == FORM_DATA['text']
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize('bad_word', BAD_WORDS)
 def test_comment_with_forbidden_words_not_published(author_client, news,
-                                                    bad_word, form_data):
+                                                    bad_word, urls):
     """
-    Если комментарий содержит запрещённые слова, он не будет опубликован,
-    а форма вернёт ошибку.
+    Если комментарий содержит запрещённые слова, он не будет опубликован, 
+    а форма вернёт ошибку. 
     """
-    form_data['text'] = f'Этот комментарий содержит слово: {bad_word}'
-    url = reverse('news:detail', args=[news.id])
-    response = author_client.post(url, data=form_data)
+    Comment.objects.filter(news=news).delete()
+    FORM_DATA['text'] = f'Этот комментарий содержит слово: {bad_word}'
+    url = urls['news_detail']
+    response = author_client.post(url, data=FORM_DATA)
+
     assert WARNING in response.content.decode('utf-8')
-    assert not (Comment.objects
-                .filter(text=form_data['text'], news=news)
-                .exists())
+    assert Comment.objects.filter(news=news).count() == 0
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    'name',
-    ('news:delete', 'news:edit'),
-)
-def test_user_can_delete_own_comment(author_client, comment, name):
+def test_user_can_delete_own_comment(comment, author_client, urls):
+
     """
     Авторизованный пользователь может
-    удалять и редактировать свои комментарии.
+    удалять свои комментарии.
     """
-    url = reverse(name, args=[comment.id])
+    url = urls['delete']
     response = author_client.post(url)
-    assert response.status_code == HTTPStatus.FOUND or HTTPStatus.OK
-    if name == 'news:delete':
-        assert not Comment.objects.filter(id=comment.id).exists()
+    assert response.status_code == HTTPStatus.FOUND
+    assert not Comment.objects.filter(id=comment.id,
+                                      news=comment.news,
+                                      author=comment.author,
+                                      text=comment.text).exists()
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    'name',
-    ('news:delete', 'news:edit'),
-)
-def test_user_cannot_delete_another_users_comment(not_author_client,
-                                                  comment, name):
+def test_user_can_edit_own_comment(comment, author_client, urls):
+
     """
-    Авторизованный пользователь не может удалять
-    и редактировать чужие комментарии.
+    Авторизованный пользователь может
+    редактировать свои комментарии.
     """
-    url = reverse(name, args=[comment.id])
+    url = urls['edit']
+    new_text = 'Обновленный текст комментария'
+    response = author_client.post(url, data={'text': new_text})
+    assert response.status_code == HTTPStatus.FOUND
+
+    comment.refresh_from_db()
+    assert comment.text == new_text
+
+
+def test_user_cannot_delete_another_users_comment(comment, not_author_client,
+                                                  urls):
+
+    """
+    Авторизованный пользователь не может
+    удалять комментарии других пользователей.
+    """
+    url = urls['delete']
     response = not_author_client.post(url)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert Comment.objects.filter(id=comment.id).exists()
+    assert Comment.objects.filter(id=comment.id,
+                                  news=comment.news,
+                                  author=comment.author,
+                                  text=comment.text).exists()
+
+
+def test_user_cannot_edit_another_users_comment(comment, not_author_client,
+                                                urls):
+
+    """
+    Авторизованный пользователь может
+    редактировать свои комментарии.
+    """
+    url = urls['edit']
+    new_text = 'Обновленный текст комментария'
+    response = not_author_client.post(url, data={'text': new_text})
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+    comment.refresh_from_db()
+    assert comment.text != new_text

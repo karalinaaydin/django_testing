@@ -1,8 +1,10 @@
 import pytest
 
+from django.conf import settings
 from django.test.client import Client
-
-from news.models import News, Comment
+from django.urls import reverse
+import datetime
+from news.models import Comment, News
 
 
 @pytest.fixture
@@ -39,38 +41,50 @@ def news(db):
 
 @pytest.fixture
 def news_items(db):
-    for i in range(10):
-        News.objects.create(
-            title=f'Заголовок новости {i}',
-            text=f'Текст новости {i}',
-        )
+    return News.objects.bulk_create(
+        [
+            News(title=f'Заголовок новости {i}', text=f'Текст новости {i}')
+            for i in range(settings.NEWS_COUNT_ON_HOME_PAGE)
+        ]
+    )
 
 
 @pytest.fixture
-def comment(author, news):
-    comment = Comment.objects.create(
+def comment(news, author):
+    return Comment.objects.create(
         text='Текст тестового комментария',
         author=author,
-        news=news
-    )
-    return comment
+        news=news)
 
 
 @pytest.fixture
 def comments(news, author):
-    comments = [
-        Comment.objects.create(text='Первый комментарий', news=news,
-                               author=author, created='2024-01-01 10:00:00'),
-        Comment.objects.create(text='Второй комментарий', news=news,
-                               author=author, created='2024-01-01 12:00:00'),
-        Comment.objects.create(text='Третий комментарий', news=news,
-                               author=author, created='2024-01-01 14:00:00'),
-    ]
-    return comments
+    now = datetime.datetime.now()
+    return Comment.objects.bulk_create(
+        [
+            Comment(
+                text=f'Комментарий {i}',
+                news=news,
+                author=author,
+                created=now + datetime.timedelta(seconds=i)  # Unique timestamps
+            ) for i in range(1, 334)
+        ]
+    )
 
 
 @pytest.fixture
-def form_data():
+def clear_comments(news):
+    Comment.objects.filter(news=news).delete()
+    yield
+    Comment.objects.filter(news=news).delete()
+
+
+@pytest.fixture
+def urls(news, comment):
+    """Фикстура для предварительного вычисления URL-адресов для тестов."""
     return {
-        'text': 'Текст комментария',
+        'home': reverse('news:home'),
+        'news_detail': reverse('news:detail', args=[news.id]),
+        'edit': reverse('news:edit', args=[comment.id]),
+        'delete': reverse('news:delete', args=[comment.id]),
     }
