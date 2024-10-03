@@ -1,9 +1,9 @@
 import pytest
 
 from django.conf import settings
-from django.urls import reverse
 
 from news.forms import CommentForm
+from news.models import Comment
 
 
 pytestmark = pytest.mark.django_db
@@ -40,16 +40,15 @@ def test_comments_sorted_by_creation_asc(client, news, comments, urls):
     по возрастанию времени создания.
     """
     url = urls['news_detail']
+    Comment.objects.filter(news=news).delete()
+    Comment.objects.bulk_create(comments)
     response = client.get(url)
-    
-    # Get comments from context
-    comments_from_context = response.context['news'].comment_set.all()  # This should respect the ordering
-    
-    # Extract the created timestamps
-    comment_dates_from_context = [comment.created for comment in comments_from_context]
-    expected_comment_dates = sorted([comment.created for comment in comments])
-    
-    assert comment_dates_from_context == expected_comment_dates
+    comments_from_context = response.context['news'].comment_set.all()
+
+    dates_from_context = [comment.created for comment in comments_from_context]
+    expected_dates = sorted([comment.created for comment in comments])
+
+    assert dates_from_context == expected_dates
 
 
 def test_comment_form_visible_for_authorized_client(author_client, news, urls):

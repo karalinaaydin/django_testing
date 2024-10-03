@@ -1,9 +1,10 @@
-import pytest
+import time
 
+import pytest
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
-import datetime
+
 from news.models import Comment, News
 
 
@@ -59,24 +60,23 @@ def comment(news, author):
 
 @pytest.fixture
 def comments(news, author):
-    now = datetime.datetime.now()
-    return Comment.objects.bulk_create(
-        [
-            Comment(
-                text=f'Комментарий {i}',
-                news=news,
-                author=author,
-                created=now + datetime.timedelta(seconds=i)  # Unique timestamps
-            ) for i in range(1, 334)
-        ]
-    )
+    comments_list = []
+    for i in range(1, 333):
+        comment = Comment(
+            text=f'Комментарий {i}',
+            news=news,
+            author=author,
+        )
+        comments_list.append(comment)
+        time.sleep(0.01)
+
+    return comments_list
 
 
 @pytest.fixture
 def clear_comments(news):
-    Comment.objects.filter(news=news).delete()
+    Comment.objects.all().delete()
     yield
-    Comment.objects.filter(news=news).delete()
 
 
 @pytest.fixture
@@ -87,4 +87,7 @@ def urls(news, comment):
         'news_detail': reverse('news:detail', args=[news.id]),
         'edit': reverse('news:edit', args=[comment.id]),
         'delete': reverse('news:delete', args=[comment.id]),
+        'login': reverse('users:login'),
+        'logout': reverse('users:logout'),
+        'signup': reverse('users:signup'),
     }
