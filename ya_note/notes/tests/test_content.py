@@ -1,45 +1,30 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.urls import reverse
-from notes.models import Note
+from notes.forms import NoteForm
 
-User = get_user_model()
+from .base import ADD_URL, EDIT_URL, LIST_URL, BaseTestData
 
 
-class TestContent(TestCase):
-
-    @classmethod
-    def setUpTestData(cls):
-        """Создаёт тестовые данные для тестов."""
-        cls.user1 = User.objects.create(username='Лев Толстой')
-        cls.user2 = User.objects.create(username='Фёдор Достоевский')
-        cls.note1 = Note.objects.create(title='Заметка 1',
-                                        text='Текст 1',
-                                        author=cls.user1)
-        cls.note2 = Note.objects.create(title='Заметка 2',
-                                        text='Текст 2',
-                                        author=cls.user2)
+class TestContent(BaseTestData):
 
     def test_note_in_object_list(self):
         """
         Тестирует, что заметка отображается на странице
         списка заметок в object_list.
         """
-        url = reverse('notes:list')
-        self.client.force_login(self.user1)
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        response = self.client_user1.get(LIST_URL)
         self.assertIn(self.note1, response.context['object_list'])
+        note_from_context = (response.context['object_list']
+                             .filter(slug=self.note1.slug).first())
+
+        self.assertEqual(note_from_context.title, self.note1.title)
+        self.assertEqual(note_from_context.text, self.note1.text)
+        self.assertEqual(note_from_context.author, self.note1.author)
 
     def test_user_notes_dont_include_other_users_notes(self):
         """
         Тестирует, что в списке заметок пользователя
         не отображаются заметки других пользователей.
         """
-        self.client.force_login(self.user1)
-        url = reverse('notes:list')
-        response = self.client.get(url)
-        self.assertIn(self.note1, response.context['object_list'])
+        response = self.client_user1.get(LIST_URL)
         self.assertNotIn(self.note2, response.context['object_list'])
 
     def test_creation_page_contains_form(self):
@@ -47,13 +32,11 @@ class TestContent(TestCase):
         Тестирует, что на страницах создания и редактирования заметки
         передаются формы.
         """
-        self.client.force_login(self.user1)
-        urls = (
-            ('notes:add', None),
-            ('notes:edit', (self.note1.slug,)),
-        )
-        for name, args in urls:
-            url = reverse(name, args=args)
-            response = self.client.get(url)
-            self.assertIn('form', response.context)
-            self.assertTrue(response.context['form'].is_bound is False)
+        urls = [ADD_URL, EDIT_URL(self.note1.slug)]
+        for url_name in urls:
+            with self.subTest(name=url_name):
+                response = self.client_user1.get(url_name)
+                self.assertIn('form', response.context)
+
+                form = response.context['form']
+                self.assertIsInstance(form, NoteForm)

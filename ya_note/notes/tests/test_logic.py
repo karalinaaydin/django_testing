@@ -1,108 +1,133 @@
-from django.contrib.auth import get_user_model
-from django.db import IntegrityError
-from django.test import TestCase
-from django.urls import reverse
-from notes.models import Note
+from http import HTTPStatus
+import copy
+
 from pytils.translit import slugify as pytils_slugify
 
-User = get_user_model()
+from notes.models import Note
+
+from .base import ADD_URL, DELETE_URL, EDIT_URL, LOGIN_URL, BaseTestData
 
 
-class TestNoteLogic(TestCase):
+class TestNoteLogic(BaseTestData):
 
-    @classmethod
-    def setUpTestData(cls):
-        """Создаёт тестовые данные для тестов."""
-        cls.user1 = User.objects.create(username='Лев Толстой')
-        cls.user2 = User.objects.create(username='Фёдор Достоевский')
-        cls.note = Note.objects.create(title='Заметка 1',
-                                       text='Текст 1',
-                                       author=cls.user1)
+    form_data = {
+        'title': 'Новая заметка',
+        'text': 'Текст новой заметки',
+        'slug': 'novaya-zametka'
+    }
 
     def test_logged_in_user_can_create_note(self):
         """Тестирует, что залогиненный пользователь может создать заметку."""
-        self.client.force_login(self.user1)
-        url = reverse('notes:add')
-        data = {'title': 'Новая заметка', 'text': 'Текст заметки'}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(Note.objects.filter(title='Новая заметка').exists())
+        form_data = copy.deepcopy(self.form_data)
+        response = self.client_user1.post(ADD_URL, data=form_data)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
+        created_note = Note.objects.get(slug=form_data['slug'])
+
+        self.assertEqual(created_note.title, form_data['title'])
+        self.assertEqual(created_note.text, form_data['text'])
+        self.assertEqual(created_note.slug, form_data['slug'])
+        self.assertEqual(created_note.author, self.user1)
 
     def test_anonymous_user_cannot_create_note(self):
         """Тестирует, что анонимный пользователь не может создать заметку."""
-        url = reverse('notes:add')
-        data = {'title': 'Заметка от анонима', 'text': 'Текст заметки'}
-        response = self.client.post(url, data)
-        login_url = reverse('users:login')
-        self.assertRedirects(response, f'{login_url}?next={url}')
-        self.assertFalse(Note.objects.filter
-                         (title='Заметка от анонима').exists()
-                         )
+        form_data = copy.deepcopy(self.form_data)
+        url = ADD_URL
+        response = self.client_anonymous.post(url, data=form_data)
+        self.assertRedirects(response, f'{LOGIN_URL}?next={url}')
+        self.assertEqual((Note.objects
+                          .filter(slug=form_data['slug'],
+                                  title=form_data['title'],
+                                  text=form_data['text'])
+                          .count()), 0)
 
     def test_cannot_create_two_notes_with_same_slug(self):
         """Тестирует, что нельзя создать две заметки с одинаковым slug."""
-        SAME_SLUG = 'zametka_1'
-        self.client.force_login(self.user1)
-        Note.objects.create(
-            title='Заметка 1',
-            text='Текст 1',
-            slug=SAME_SLUG,
-            author=self.user1
+        form_data = copy.deepcopy(self.form_data)
+        same_slug = self.note1.slug
+        self.assertTrue(Note.objects.filter(slug=same_slug).exists())
+        form_data['slug'] = same_slug
+        self.client_user1.post(ADD_URL, data=form_data)
+        self.assertEqual(
+            Note.objects.filter(slug=same_slug).count(), 1
         )
-        self.assertTrue(Note.objects.filter(slug='zametka-1').exists())
-        with self.assertRaises(IntegrityError):
-            Note.objects.create(title='Заметка 1 (дубликат)',
-                                text='Текст дубликата',
-                                slug=SAME_SLUG,
-                                author=self.user1)
 
     def test_slug_is_generated_if_not_provided(self):
         """
         Тестирует, что slug генерируется автоматически,
         если его не заполнить.
         """
-        self.client.force_login(self.user1)
-        url = reverse('notes:add')
-        data = {'title': 'Заголовок без slug', 'text': 'Текст заметки'}
-        self.client.post(url, data)
-        note = Note.objects.get(title='Заголовок без slug')
-        expected_slug = pytils_slugify('Заголовок без slug')
-        self.assertEqual(note.slug, expected_slug)
+        form_data = copy.deepcopy(self.form_data)
+        form_data['slug'] = ''
+        response = self.client_user1.post(ADD_URL, data=form_data)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
-    def test_user_can_edit_and_delete_own_note(self):
+        note = Note.objects.get(title=form_data['title'])
+        expected_slug = pytils_slugify(form_data['title'])
+
+        self.assertEqual(note.slug, expected_slug)
+        self.assertEqual(note.text, form_data['text'])
+        self.assertEqual(note.author, self.user1)
+
+    def test_user_can_edit_own_note(self):
         """
         Тестирует, что пользователь может
         редактировать и удалять свои заметки.
         """
-        upd_title = 'Обновлённая заметка'
-        self.client.force_login(self.user1)
-        self.assertEqual(self.note.author, self.user1)
+        form_data = copy.deepcopy(self.form_data)
+        form_data['slug'] = self.note1.slug
+        self.client_user1.post(EDIT_URL(self.note1.slug), data=form_data)
 
-        edit_url = reverse('notes:edit', args=[self.note.slug])
-        self.client.post(edit_url, {'title': upd_title,
-                                    'text': 'Обновлённый текст'})
-        self.note.refresh_from_db()
-        self.assertEqual(self.note.title, upd_title)
+        self.note1.refresh_from_db()
 
-        delete_url = reverse('notes:delete', args=[self.note.slug])
-        self.client.post(delete_url)
+        self.assertEqual(self.note1.author, self.user1)
+        self.assertEqual(self.note1.title, form_data['title'])
+        self.assertEqual(self.note1.text, form_data['text'])
+        self.assertEqual(self.note1.slug, form_data['slug'])
+
+    def test_user_can_delete_own_note(self):
+        """
+        Тестирует, что пользователь может
+        редактировать и удалять свои заметки.
+        """
+        self.assertEqual(self.note1.author, self.user1)
+        self.client_user1.post(DELETE_URL(self.note1.slug),
+                               {'title': self.note1.title,
+                                'text': self.note1.text,
+                                'slug': self.note1.slug})
         self.assertFalse(Note.objects.filter
-                         (id=self.note.id).exists()
+                         (id=self.note1.id).exists()
                          )
 
-    def test_user_cannot_edit_or_delete_others_note(self):
+    def test_user_cannot_edit_others_note(self):
         """
         Тестирует, что пользователь не может
         редактировать или удалять чужие заметки.
         """
-        self.client.force_login(self.user2)
+        form_data = copy.deepcopy(self.form_data)
+        response = self.client_user2.post(EDIT_URL(self.note1.slug),
+                                          data=form_data)
 
-        edit_url = reverse('notes:edit', args=[self.note.slug])
-        response = self.client.post(edit_url, {'title': 'Неверная правка',
-                                               'text': 'Неверный текст'})
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
-        delete_url = reverse('notes:delete', args=[self.note.slug])
-        response = self.client.post(delete_url)
-        self.assertEqual(response.status_code, 404)
-        self.assertTrue(Note.objects.filter(id=self.note.id).exists())
+        self.note1.refresh_from_db()
+
+        self.assertEqual(self.note1.author, self.user1)
+        self.assertNotEqual(self.note1.title, form_data['title'])
+        self.assertNotEqual(self.note1.text, form_data['text'])
+        self.assertNotEqual(self.note1.slug, form_data['slug'])
+
+    def test_user_cannot_delete_others_note(self):
+        """
+        Тестирует, что пользователь не может
+        редактировать или удалять чужие заметки.
+        """
+        self.assertEqual(self.note1.author, self.user1)
+        response = self.client_user2.post(DELETE_URL(self.note1.slug),
+                                          {'title': self.note1.title,
+                                           'text': self.note1.text,
+                                           'slug': self.note1.slug})
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertTrue(Note.objects.filter
+                        (id=self.note1.id).exists()
+                        )
