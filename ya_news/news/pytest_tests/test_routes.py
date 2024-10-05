@@ -12,9 +12,7 @@ pytestmark = pytest.mark.django_db
     ('home', 'login', 'logout', 'signup', 'news_detail')
 )
 def test_pages_availability_for_anonymous_user(client, name, urls):
-    """
-    Тестирует доступность страниц для анонимного пользователя.
-    """
+    """Тестирует доступность страниц для анонимного пользователя."""
     url = urls[name]
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
@@ -34,9 +32,7 @@ def test_pages_availability_for_anonymous_user(client, name, urls):
 def test_pages_availability_for_different_users(
         parametrized_client, name, expected_status, urls
 ):
-    """
-    Тестирует доступность страниц для разных пользователей.
-    """
+    """Тестирует доступность страниц для разных пользователей."""
     url = urls[name]
     response = parametrized_client.get(url)
     assert response.status_code == expected_status
@@ -47,9 +43,7 @@ def test_pages_availability_for_different_users(
     ('delete', 'edit'),
 )
 def test_redirects_for_anonymous_user(client, name, news, urls):
-    """
-    Тестирует редиректы для анонимного пользователя.
-    """
+    """Тестирует редиректы для анонимного пользователя."""
     login_url = urls['login']
     url = urls[name]
     expected_url = f'{login_url}?next={url}'

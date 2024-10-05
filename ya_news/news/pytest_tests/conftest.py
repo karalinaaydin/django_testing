@@ -74,9 +74,10 @@ def comments(news, author):
 
 
 @pytest.fixture
-def clear_comments(news):
-    Comment.objects.all().delete()
-    yield
+def clear_comments_for_news(db):
+    def _clear_comments(news):
+        Comment.objects.filter(news=news).delete()
+    return _clear_comments
 
 
 @pytest.fixture

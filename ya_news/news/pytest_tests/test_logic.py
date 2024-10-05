@@ -25,8 +25,8 @@ def test_anonymous_user_cannot_post_comment(client, news, urls):
     assert Comment.objects.filter(news=news).count() == 0
 
 
-def test_authenticated_user_can_post_comment(author_client, author, news, urls):
-
+def test_authenticated_user_can_post_comment(author_client, author,
+                                             news, urls):
     """
     Авторизованный пользователь может отправить комментарий
     на странице новости.
@@ -47,8 +47,8 @@ def test_authenticated_user_can_post_comment(author_client, author, news, urls):
 def test_comment_with_forbidden_words_not_published(author_client, news,
                                                     bad_word, urls):
     """
-    Если комментарий содержит запрещённые слова, он не будет опубликован, 
-    а форма вернёт ошибку. 
+    Если комментарий содержит запрещённые слова, он не будет опубликован,
+    а форма вернёт ошибку.
     """
     Comment.objects.filter(news=news).delete()
     FORM_DATA['text'] = f'Этот комментарий содержит слово: {bad_word}'
@@ -60,7 +60,6 @@ def test_comment_with_forbidden_words_not_published(author_client, news,
 
 
 def test_user_can_delete_own_comment(comment, author_client, urls):
-
     """
     Авторизованный пользователь может
     удалять свои комментарии.
@@ -75,7 +74,6 @@ def test_user_can_delete_own_comment(comment, author_client, urls):
 
 
 def test_user_can_edit_own_comment(comment, author_client, urls):
-
     """
     Авторизованный пользователь может
     редактировать свои комментарии.
@@ -91,7 +89,6 @@ def test_user_can_edit_own_comment(comment, author_client, urls):
 
 def test_user_cannot_delete_another_users_comment(comment, not_author_client,
                                                   urls):
-
     """
     Авторизованный пользователь не может
     удалять комментарии других пользователей.
@@ -107,11 +104,7 @@ def test_user_cannot_delete_another_users_comment(comment, not_author_client,
 
 def test_user_cannot_edit_another_users_comment(comment, not_author_client,
                                                 urls):
-
-    """
-    Авторизованный пользователь может
-    редактировать свои комментарии.
-    """
+    """Авторизованный пользователь может редактировать свои комментарии."""
     url = urls['edit']
     new_text = 'Обновленный текст комментария'
     response = not_author_client.post(url, data={'text': new_text})
