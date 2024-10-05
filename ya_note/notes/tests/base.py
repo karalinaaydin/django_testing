@@ -14,9 +14,14 @@ LOGOUT_URL = reverse('users:logout')
 SIGNUP_URL = reverse('users:signup')
 SUCCESS_URL = reverse('notes:success')
 
-DETAIL_URL = lambda slug: reverse('notes:edit', args=[slug])
-DELETE_URL = lambda slug: reverse('notes:delete', args=[slug])
-EDIT_URL = lambda slug: reverse('notes:edit', args=[slug])
+def detail_url(slug):
+    return reverse('notes:detail', args=[slug])
+
+def delete_url(slug):
+    return reverse('notes:delete', args=[slug])
+
+def edit_url(slug):
+    return reverse('notes:edit', args=[slug])
 
 
 class BaseTestData(TestCase):

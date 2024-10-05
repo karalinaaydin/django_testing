@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from .base import (ADD_URL, DELETE_URL, DETAIL_URL, EDIT_URL, HOME_PAGE_URL,
+from .base import (ADD_URL, delete_url, detail_url, edit_url, HOME_PAGE_URL,
                    LIST_URL, LOGIN_URL, LOGOUT_URL, SIGNUP_URL, SUCCESS_URL,
                    BaseTestData)
 
@@ -19,15 +19,15 @@ class TestRoutes(BaseTestData):
             [ADD_URL, self.client_user1, HTTPStatus.OK],
             [LIST_URL, self.client_user1, HTTPStatus.OK],
 
-            [EDIT_URL(self.note1.slug), self.client_user1, HTTPStatus.OK],
-            [DELETE_URL(self.note1.slug), self.client_user1, HTTPStatus.OK],
-            [DETAIL_URL(self.note1.slug), self.client_user1, HTTPStatus.OK],
+            [edit_url(self.note1.slug), self.client_user1, HTTPStatus.OK],
+            [delete_url(self.note1.slug), self.client_user1, HTTPStatus.OK],
+            [detail_url(self.note1.slug), self.client_user1, HTTPStatus.OK],
 
-            [EDIT_URL(self.note1.slug), self.client_user2,
+            [edit_url(self.note1.slug), self.client_user2,
              HTTPStatus.NOT_FOUND],
-            [DELETE_URL(self.note1.slug), self.client_user2,
+            [delete_url(self.note1.slug), self.client_user2,
              HTTPStatus.NOT_FOUND],
-            [DETAIL_URL(self.note1.slug), self.client_user2,
+            [detail_url(self.note1.slug), self.client_user2,
              HTTPStatus.NOT_FOUND]
         ]
         for url_name, client_instance, exp_status_code in cases:
@@ -41,8 +41,8 @@ class TestRoutes(BaseTestData):
         перенаправляются на страницу входа.
         """
         urls = [LIST_URL, SUCCESS_URL, ADD_URL,
-                DETAIL_URL(self.note1.slug), EDIT_URL(self.note1.slug),
-                DELETE_URL(self.note1.slug)]
+                detail_url(self.note1.slug), edit_url(self.note1.slug),
+                delete_url(self.note1.slug)]
         for url_name in urls:
             with self.subTest(name=url_name):
                 redirect_url = f'{LOGIN_URL}?next={url_name}'

@@ -1,6 +1,6 @@
 from notes.forms import NoteForm
 
-from .base import ADD_URL, EDIT_URL, LIST_URL, BaseTestData
+from .base import ADD_URL, edit_url, LIST_URL, BaseTestData
 
 
 class TestContent(BaseTestData):
@@ -32,7 +32,7 @@ class TestContent(BaseTestData):
         Тестирует, что на страницах создания и редактирования заметки
         передаются формы.
         """
-        urls = [ADD_URL, EDIT_URL(self.note1.slug)]
+        urls = [ADD_URL, edit_url(self.note1.slug)]
         for url_name in urls:
             with self.subTest(name=url_name):
                 response = self.client_user1.get(url_name)

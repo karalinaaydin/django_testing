@@ -5,7 +5,7 @@ from pytils.translit import slugify as pytils_slugify
 
 from notes.models import Note
 
-from .base import ADD_URL, DELETE_URL, EDIT_URL, LOGIN_URL, BaseTestData
+from .base import ADD_URL, delete_url, edit_url, LOGIN_URL, BaseTestData
 
 
 class TestNoteLogic(BaseTestData):
@@ -76,7 +76,7 @@ class TestNoteLogic(BaseTestData):
         """
         form_data = copy.deepcopy(self.form_data)
         form_data['slug'] = self.note1.slug
-        self.client_user1.post(EDIT_URL(self.note1.slug), data=form_data)
+        self.client_user1.post(edit_url(self.note1.slug), data=form_data)
 
         self.note1.refresh_from_db()
 
@@ -91,7 +91,7 @@ class TestNoteLogic(BaseTestData):
         редактировать и удалять свои заметки.
         """
         self.assertEqual(self.note1.author, self.user1)
-        self.client_user1.post(DELETE_URL(self.note1.slug),
+        self.client_user1.post(delete_url(self.note1.slug),
                                {'title': self.note1.title,
                                 'text': self.note1.text,
                                 'slug': self.note1.slug})
@@ -105,7 +105,7 @@ class TestNoteLogic(BaseTestData):
         редактировать или удалять чужие заметки.
         """
         form_data = copy.deepcopy(self.form_data)
-        response = self.client_user2.post(EDIT_URL(self.note1.slug),
+        response = self.client_user2.post(edit_url(self.note1.slug),
                                           data=form_data)
 
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
@@ -123,7 +123,7 @@ class TestNoteLogic(BaseTestData):
         редактировать или удалять чужие заметки.
         """
         self.assertEqual(self.note1.author, self.user1)
-        response = self.client_user2.post(DELETE_URL(self.note1.slug),
+        response = self.client_user2.post(delete_url(self.note1.slug),
                                           {'title': self.note1.title,
                                            'text': self.note1.text,
                                            'slug': self.note1.slug})
