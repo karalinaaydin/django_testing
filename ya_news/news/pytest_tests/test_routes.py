@@ -1,19 +1,21 @@
 import pytest
 from http import HTTPStatus
 
-from pytest_django.asserts import assertRedirects
-
-
 pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize(
-    'name',
-    ('home', 'login', 'logout', 'signup', 'news_detail')
+    'url',
+    [
+        pytest.lazy_fixture('login_url'),
+        pytest.lazy_fixture('logout_url'),
+        pytest.lazy_fixture('home_url'),
+        pytest.lazy_fixture('signup_url'),
+        pytest.lazy_fixture('news_detail_url')
+    ]
 )
-def test_pages_availability_for_anonymous_user(client, name, urls):
+def test_pages_availability_for_anonymous_user(client, url):
     """Тестирует доступность страниц для анонимного пользователя."""
-    url = urls[name]
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
 
@@ -26,26 +28,30 @@ def test_pages_availability_for_anonymous_user(client, name, urls):
     )
 )
 @pytest.mark.parametrize(
-    'name',
-    ('delete', 'edit'),
+    'url',
+    [
+        pytest.lazy_fixture('delete_url'),
+        pytest.lazy_fixture('edit_url'),
+    ]
 )
-def test_pages_availability_for_different_users(
-        parametrized_client, name, expected_status, urls
-):
+def test_pages_availability_for_different_users(expected_status, url,
+                                                parametrized_client):
     """Тестирует доступность страниц для разных пользователей."""
-    url = urls[name]
     response = parametrized_client.get(url)
     assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(
-    'name',
-    ('delete', 'edit'),
+    'url',
+    [
+        pytest.lazy_fixture('delete_url'),
+        pytest.lazy_fixture('edit_url'),
+    ]
 )
-def test_redirects_for_anonymous_user(client, name, news, urls):
+def test_redirects_for_anonymous_user(client, redirect_url, url):
     """Тестирует редиректы для анонимного пользователя."""
-    login_url = urls['login']
-    url = urls[name]
-    expected_url = f'{login_url}?next={url}'
+    expected_url = redirect_url(url)
     response = client.get(url)
-    assertRedirects(response, expected_url)
+
+    assert response.status_code == HTTPStatus.FOUND
+    assert response.url == expected_url

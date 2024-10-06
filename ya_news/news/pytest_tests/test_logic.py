@@ -13,29 +13,27 @@ FORM_DATA = {
 }
 
 
-def test_anonymous_user_cannot_post_comment(client, news, urls):
+def test_anonymous_user_cannot_post_comment(client, news, news_detail_url):
     """
     Анонимный пользователь не может отправить комментарий
     на странице новости.
     """
-    url = urls['news_detail']
-    Comment.objects.filter(news=news).delete()
-    response = client.post(url, data=FORM_DATA)
+    Comment.objects.all().delete()
+    response = client.post(news_detail_url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
     assert Comment.objects.filter(news=news).count() == 0
 
 
 def test_authenticated_user_can_post_comment(author_client, author,
-                                             news, urls):
+                                             news, news_detail_url):
     """
     Авторизованный пользователь может отправить комментарий
     на странице новости.
     """
-    url = urls['news_detail']
-    Comment.objects.filter(news=news).delete()
-    response = author_client.post(url, data=FORM_DATA)
+    Comment.objects.all().delete()
+    response = author_client.post(news_detail_url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
-    assert Comment.objects.filter(news=news).count() == 1
+    assert Comment.objects.count() == 1
 
     comment = Comment.objects.first()
     assert comment.author == author
@@ -45,70 +43,69 @@ def test_authenticated_user_can_post_comment(author_client, author,
 
 @pytest.mark.parametrize('bad_word', BAD_WORDS)
 def test_comment_with_forbidden_words_not_published(author_client, news,
-                                                    bad_word, urls):
+                                                    bad_word, news_detail_url):
     """
     Если комментарий содержит запрещённые слова, он не будет опубликован,
     а форма вернёт ошибку.
     """
-    Comment.objects.filter(news=news).delete()
-    FORM_DATA['text'] = f'Этот комментарий содержит слово: {bad_word}'
-    url = urls['news_detail']
-    response = author_client.post(url, data=FORM_DATA)
+    Comment.objects.all().delete()
+    response = author_client.post(news_detail_url, 
+                                  data={
+                                      'text': f'Текст комментария: {bad_word}'
+                                      })
+    form = response.context['form']
 
-    assert WARNING in response.content.decode('utf-8')
-    assert Comment.objects.filter(news=news).count() == 0
+    assert 'text' in form.errors
+    assert WARNING in form.errors['text']
+    assert Comment.objects.count() == 0
 
 
-def test_user_can_delete_own_comment(comment, author_client, urls):
+def test_user_can_delete_own_comment(comment, author_client, delete_url):
     """
     Авторизованный пользователь может
     удалять свои комментарии.
     """
-    url = urls['delete']
-    response = author_client.post(url)
+    response = author_client.post(delete_url)
     assert response.status_code == HTTPStatus.FOUND
-    assert not Comment.objects.filter(id=comment.id,
-                                      news=comment.news,
-                                      author=comment.author,
-                                      text=comment.text).exists()
+    assert not Comment.objects.filter(id=comment.id).exists()
 
 
-def test_user_can_edit_own_comment(comment, author_client, urls):
+def test_user_can_edit_own_comment(comment, author_client, edit_url):
     """
     Авторизованный пользователь может
     редактировать свои комментарии.
     """
-    url = urls['edit']
-    new_text = 'Обновленный текст комментария'
-    response = author_client.post(url, data={'text': new_text})
+    response = author_client.post(edit_url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.FOUND
+    updated_comment = Comment.objects.get(id=comment.id)
 
-    comment.refresh_from_db()
-    assert comment.text == new_text
+    assert updated_comment.text == FORM_DATA['text']
+    assert updated_comment.author == comment.author
+    assert updated_comment.news == comment.news
 
 
 def test_user_cannot_delete_another_users_comment(comment, not_author_client,
-                                                  urls):
+                                                  delete_url):
     """
     Авторизованный пользователь не может
     удалять комментарии других пользователей.
     """
-    url = urls['delete']
-    response = not_author_client.post(url)
+    response = not_author_client.post(delete_url)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert Comment.objects.filter(id=comment.id,
-                                  news=comment.news,
-                                  author=comment.author,
-                                  text=comment.text).exists()
+    comment_from_db = Comment.objects.get(id=comment.id)
+    
+    assert comment_from_db.news == comment.news
+    assert comment_from_db.author == comment.author
+    assert comment_from_db.text == comment.text
 
 
 def test_user_cannot_edit_another_users_comment(comment, not_author_client,
-                                                urls):
+                                                edit_url):
     """Авторизованный пользователь может редактировать свои комментарии."""
-    url = urls['edit']
-    new_text = 'Обновленный текст комментария'
-    response = not_author_client.post(url, data={'text': new_text})
+    response = not_author_client.post(edit_url, data=FORM_DATA)
     assert response.status_code == HTTPStatus.NOT_FOUND
+    comment_from_db = Comment.objects.get(id=comment.id)
 
-    comment.refresh_from_db()
-    assert comment.text != new_text
+    assert comment_from_db.text == comment.text
+    assert comment_from_db.news == comment.news
+    assert comment_from_db.author == comment.author

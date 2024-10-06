@@ -1,5 +1,3 @@
-import time
-
 import pytest
 from django.conf import settings
 from django.test.client import Client
@@ -43,11 +41,9 @@ def news(db):
 @pytest.fixture
 def news_items(db):
     return News.objects.bulk_create(
-        [
-            News(title=f'Заголовок новости {i}', text=f'Текст новости {i}')
-            for i in range(settings.NEWS_COUNT_ON_HOME_PAGE)
-        ]
-    )
+        News(title=f'Заголовок новости {i}', text=f'Текст новости {i}')
+        for i in range(settings.NEWS_COUNT_ON_HOME_PAGE)
+        )
 
 
 @pytest.fixture
@@ -60,35 +56,62 @@ def comment(news, author):
 
 @pytest.fixture
 def comments(news, author):
-    comments_list = []
-    for i in range(1, 333):
-        comment = Comment(
+    Comment.objects.bulk_create(
+        Comment(
             text=f'Комментарий {i}',
             news=news,
             author=author,
         )
-        comments_list.append(comment)
-        time.sleep(0.01)
-
-    return comments_list
-
-
-@pytest.fixture
-def clear_comments_for_news(db):
-    def _clear_comments(news):
-        Comment.objects.filter(news=news).delete()
-    return _clear_comments
+        for i in range(1, 333)
+    )
+    return Comment.objects.filter(news=news)
 
 
 @pytest.fixture
-def urls(news, comment):
-    """Фикстура для предварительного вычисления URL-адресов для тестов."""
-    return {
-        'home': reverse('news:home'),
-        'news_detail': reverse('news:detail', args=[news.id]),
-        'edit': reverse('news:edit', args=[comment.id]),
-        'delete': reverse('news:delete', args=[comment.id]),
-        'login': reverse('users:login'),
-        'logout': reverse('users:logout'),
-        'signup': reverse('users:signup'),
-    }
+def home_url():
+    """Фикстура для получения URL домашней страницы."""
+    return reverse('news:home')
+
+
+@pytest.fixture
+def news_detail_url(news):
+    """Фикстура для получения URL деталей новости."""
+    return reverse('news:detail', args=[news.id])
+
+
+@pytest.fixture
+def edit_url(comment):
+    """Фикстура для получения URL редактирования комментария."""
+    return reverse('news:edit', args=[comment.id])
+
+
+@pytest.fixture
+def delete_url(comment):
+    """Фикстура для получения URL удаления комментария."""
+    return reverse('news:delete', args=[comment.id])
+
+
+@pytest.fixture
+def login_url():
+    """Фикстура для получения URL страницы входа."""
+    return reverse('users:login')
+
+
+@pytest.fixture
+def logout_url():
+    """Фикстура для получения URL страницы выхода."""
+    return reverse('users:logout')
+
+
+@pytest.fixture
+def signup_url():
+    """Фикстура для получения URL страницы регистрации."""
+    return reverse('users:signup')
+
+
+@pytest.fixture
+def redirect_url(login_url):
+    """Фикстура для формирования ожидаемого URL редиректа."""
+    def _redirect(url):
+        return f'{login_url}?next={url}'
+    return _redirect
