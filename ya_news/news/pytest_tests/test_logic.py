@@ -49,10 +49,10 @@ def test_comment_with_forbidden_words_not_published(author_client, news,
     а форма вернёт ошибку.
     """
     Comment.objects.all().delete()
-    response = author_client.post(news_detail_url, 
+    response = author_client.post(news_detail_url,
                                   data={
-                                      'text': f'Текст комментария: {bad_word}'
-                                      })
+                                      'text': f'Текст комментария: {bad_word}'}
+                                  )
     form = response.context['form']
 
     assert 'text' in form.errors
@@ -93,7 +93,7 @@ def test_user_cannot_delete_another_users_comment(comment, not_author_client,
     response = not_author_client.post(delete_url)
     assert response.status_code == HTTPStatus.NOT_FOUND
     comment_from_db = Comment.objects.get(id=comment.id)
-    
+
     assert comment_from_db.news == comment.news
     assert comment_from_db.author == comment.author
     assert comment_from_db.text == comment.text

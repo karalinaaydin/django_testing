@@ -1,4 +1,5 @@
 import pytest
+
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
@@ -42,8 +43,7 @@ def news(db):
 def news_items(db):
     return News.objects.bulk_create(
         News(title=f'Заголовок новости {i}', text=f'Текст новости {i}')
-        for i in range(settings.NEWS_COUNT_ON_HOME_PAGE)
-        )
+        for i in range(settings.NEWS_COUNT_ON_HOME_PAGE))
 
 
 @pytest.fixture
