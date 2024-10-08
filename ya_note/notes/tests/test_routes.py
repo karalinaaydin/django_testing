@@ -1,8 +1,14 @@
 from http import HTTPStatus
 
-from .base import (ADD_URL, DELETE_URL, DETAIL_URL, EDIT_URL, HOME_PAGE_URL,
-                   LIST_URL, LOGIN_URL, LOGOUT_URL, SIGNUP_URL, SUCCESS_URL,
-                   BaseTestData, get_redirect_url)
+from .base import (ADD_URL, REDIRECT_ADD_URL,
+                   DELETE_URL, REDIRECT_DELETE_URL,
+                   DETAIL_URL, REDIRECT_DETAIL_URL,
+                   EDIT_URL, REDIRECT_EDIT_URL,
+                   HOME_PAGE_URL, LOGIN_URL, LOGOUT_URL, SIGNUP_URL,
+                   LIST_URL, REDIRECT_LIST_URL,
+                   LOGIN_URL, LOGOUT_URL, SIGNUP_URL,
+                   SUCCESS_URL, REDIRECT_SUCCESS_URL,
+                   BaseTestData)
 
 
 class TestRoutes(BaseTestData):
@@ -44,9 +50,15 @@ class TestRoutes(BaseTestData):
         Проверяет, что анонимные пользователи
         перенаправляются на страницу входа.
         """
-        urls = [LIST_URL, SUCCESS_URL, ADD_URL,
-                DETAIL_URL, EDIT_URL, DELETE_URL]
-        for url in urls:
+        cases = [
+            [SUCCESS_URL, REDIRECT_SUCCESS_URL],
+            [ADD_URL, REDIRECT_ADD_URL],
+            [LIST_URL, REDIRECT_LIST_URL],
+            [EDIT_URL, REDIRECT_EDIT_URL],
+            [DELETE_URL, REDIRECT_DELETE_URL],
+            [DETAIL_URL, REDIRECT_DETAIL_URL]
+        ]
+        for url, expected_redirect_url in cases:
             with self.subTest(url=url):
                 self.assertRedirects(self.client.get(url),
-                                     get_redirect_url(url))
+                                     expected_redirect_url)

@@ -6,18 +6,24 @@ from notes.models import Note
 
 User = get_user_model()
 
-ADD_URL = reverse('notes:add')
-HOME_PAGE_URL = reverse('notes:home')
-LIST_URL = reverse('notes:list')
 LOGIN_URL = reverse('users:login')
 LOGOUT_URL = reverse('users:logout')
 SIGNUP_URL = reverse('users:signup')
+HOME_PAGE_URL = reverse('notes:home')
+ADD_URL = reverse('notes:add')
+REDIRECT_ADD_URL = f'{LOGIN_URL}?next={ADD_URL}'
+LIST_URL = reverse('notes:list')
+REDIRECT_LIST_URL = f'{LOGIN_URL}?next={LIST_URL}'
 SUCCESS_URL = reverse('notes:success')
+REDIRECT_SUCCESS_URL = f'{LOGIN_URL}?next={SUCCESS_URL}'
 
 NOTE_SLUG = 'Zametka-1'
 DETAIL_URL = reverse('notes:detail', args=[NOTE_SLUG])
+REDIRECT_DETAIL_URL = f'{LOGIN_URL}?next={DETAIL_URL}'
 DELETE_URL = reverse('notes:delete', args=[NOTE_SLUG])
+REDIRECT_DELETE_URL = f'{LOGIN_URL}?next={DELETE_URL}'
 EDIT_URL = reverse('notes:edit', args=[NOTE_SLUG])
+REDIRECT_EDIT_URL = f'{LOGIN_URL}?next={EDIT_URL}'
 
 
 def get_redirect_url(url):
@@ -29,6 +35,8 @@ class BaseTestData(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Подготовка данных для всех тестов."""
+        super().setUp(cls)
+
         cls.user1 = User.objects.create(username='Лев Толстой')
         cls.user2 = User.objects.create(username='Фёдор Достоевский')
         cls.note1 = Note.objects.create(title='Заметка 1',
@@ -47,17 +55,3 @@ class BaseTestData(TestCase):
         cls.client_user2.force_login(cls.user2)
 
         cls.client_anonymous = cls.client_class()
-
-    def setUp(self):
-        """Настройка для каждого теста."""
-        super().setUp()
-        self.form_data = self.get_form_data()
-
-    @staticmethod
-    def get_form_data():
-        """Метод для получения свежего словаря данных формы."""
-        return {
-            'title': 'Новый заголовок',
-            'text': 'Новый текст',
-            'slug': 'new-slug'
-        }
