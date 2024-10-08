@@ -1,10 +1,14 @@
 import pytest
+from datetime import datetime
+from datetime import timedelta
+from django.utils import timezone
 
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
 
 from news.models import Comment, News
+from news.forms import BAD_WORDS
 
 
 @pytest.fixture
@@ -56,14 +60,18 @@ def comment(news, author):
 
 @pytest.fixture
 def comments(news, author):
-    Comment.objects.bulk_create(
-        Comment(
+    comments = []
+    Comment._meta.get_field('created').auto_now_add = False
+    for i in range(1, 333):
+        comment = Comment(
             text=f'Комментарий {i}',
             news=news,
             author=author,
         )
-        for i in range(1, 333)
-    )
+        comment.created = timezone.now() - timedelta(seconds=i)
+        comments.append(comment)
+    Comment.objects.bulk_create(comments)
+    Comment._meta.get_field('created').auto_now_add = True
     return Comment.objects.filter(news=news)
 
 
@@ -110,8 +118,18 @@ def signup_url():
 
 
 @pytest.fixture
-def redirect_url(login_url):
-    """Фикстура для формирования ожидаемого URL редиректа."""
-    def _redirect(url):
-        return f'{login_url}?next={url}'
-    return _redirect
+def edit_redirect_url(login_url, edit_url):
+    """
+    Фикстура для формирования ожидаемого URL редиректа
+    со страницы редактирования комментария.
+    """
+    return f'{login_url}?next={edit_url}'
+
+
+@pytest.fixture
+def delete_redirect_url(login_url, delete_url):
+    """
+    Фикстура для формирования ожидаемого URL редиректа
+    со траницы удаления комментария.
+    """
+    return f'{login_url}?next={delete_url}'

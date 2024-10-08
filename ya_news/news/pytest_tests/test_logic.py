@@ -41,6 +41,10 @@ def test_authenticated_user_can_post_comment(author_client, author,
     assert comment.text == FORM_DATA['text']
 
 
+def badword_form_data(bad_word):
+    return {'text': f'Текст комментария: {bad_word}'}
+
+
 @pytest.mark.parametrize('bad_word', BAD_WORDS)
 def test_comment_with_forbidden_words_not_published(author_client, news,
                                                     bad_word, news_detail_url):
@@ -50,8 +54,7 @@ def test_comment_with_forbidden_words_not_published(author_client, news,
     """
     Comment.objects.all().delete()
     response = author_client.post(news_detail_url,
-                                  data={
-                                      'text': f'Текст комментария: {bad_word}'}
+                                  data=badword_form_data(bad_word)
                                   )
     form = response.context['form']
 
@@ -65,9 +68,11 @@ def test_user_can_delete_own_comment(comment, author_client, delete_url):
     Авторизованный пользователь может
     удалять свои комментарии.
     """
+    initial_count = Comment.objects.count()
     response = author_client.post(delete_url)
     assert response.status_code == HTTPStatus.FOUND
     assert not Comment.objects.filter(id=comment.id).exists()
+    assert Comment.objects.count() == initial_count - 1
 
 
 def test_user_can_edit_own_comment(comment, author_client, edit_url):
@@ -90,8 +95,10 @@ def test_user_cannot_delete_another_users_comment(comment, not_author_client,
     Авторизованный пользователь не может
     удалять комментарии других пользователей.
     """
+    assert Comment.objects.filter(id=comment.id).exists()
     response = not_author_client.post(delete_url)
     assert response.status_code == HTTPStatus.NOT_FOUND
+
     comment_from_db = Comment.objects.get(id=comment.id)
 
     assert comment_from_db.news == comment.news
