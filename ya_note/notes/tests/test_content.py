@@ -1,4 +1,5 @@
 from notes.forms import NoteForm
+from notes.models import Note
 
 from .base import ADD_URL, EDIT_URL, LIST_URL, BaseTestData
 
@@ -10,6 +11,8 @@ class TestContent(BaseTestData):
         Тестирует, что заметка отображается на странице
         списка заметок в object_list.
         """
+        self.assertTrue(Note.objects.filter(id=self.note1.id).exists())
+
         note = (self.client_user1
                 .get(LIST_URL)
                 .context['object_list']

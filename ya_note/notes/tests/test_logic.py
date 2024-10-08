@@ -3,8 +3,8 @@ from http import HTTPStatus
 from pytils.translit import slugify as pytils_slugify
 
 from notes.models import Note
-from .base import (ADD_URL, DELETE_URL, EDIT_URL, BaseTestData,
-                   get_redirect_url)
+from .base import (ADD_URL, REDIRECT_ADD_URL, DELETE_URL,
+                   EDIT_URL, BaseTestData)
 
 
 class TestNoteLogic(BaseTestData):
@@ -12,23 +12,23 @@ class TestNoteLogic(BaseTestData):
     def test_logged_in_user_can_create_note(self):
         """Тестирует, что залогиненный пользователь может создать заметку."""
         Note.objects.all().delete()
-        self.assertFalse(Note.objects
-                         .filter(slug=self.form_data['slug']).exists())
 
         response = self.client_user1.post(ADD_URL, data=self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(Note.objects.all().count(), 1)
-        created_note = Note.objects.get(slug=self.form_data['slug'])
+
+        created_note = Note.objects.get()
 
         self.assertEqual(created_note.author, self.user1)
         self.assertEqual(created_note.title, self.form_data['title'])
         self.assertEqual(created_note.text, self.form_data['text'])
+        self.assertEqual(created_note.slug, self.form_data['slug'])
 
     def test_anonymous_user_cannot_create_note(self):
         """Тестирует, что анонимный пользователь не может создать заметку."""
         notes_before = set(Note.objects.values_list('id', flat=True))
-        response = self.client_anonymous.post(ADD_URL, data=self.form_data)
-        self.assertRedirects(response, get_redirect_url(ADD_URL))
+        response = self.client.post(ADD_URL, data=self.form_data)
+        self.assertRedirects(response, REDIRECT_ADD_URL)
         notes_after = set(Note.objects.values_list('id', flat=True))
         self.assertEqual(notes_before, notes_after)
 
@@ -48,17 +48,16 @@ class TestNoteLogic(BaseTestData):
         Note.objects.all().delete()
         self.form_data['slug'] = ''
         expected_slug = pytils_slugify(self.form_data['title'])
-        self.assertFalse(Note.objects
-                         .filter(slug=expected_slug).exists())
         response = self.client_user1.post(ADD_URL, data=self.form_data)
 
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(Note.objects.all().count(), 1)
 
-        note = Note.objects.get(slug=expected_slug)
+        note = Note.objects.get()
 
         self.assertEqual(note.title, self.form_data['title'])
         self.assertEqual(note.text, self.form_data['text'])
+        self.assertEqual(note.slug, expected_slug)
         self.assertEqual(note.author, self.user1)
 
     def test_user_can_edit_own_note(self):
@@ -82,7 +81,6 @@ class TestNoteLogic(BaseTestData):
         """
         initial_count = Note.objects.count()
 
-        self.assertTrue(Note.objects.filter(id=self.note1.id).exists())
         self.client_user1.post(DELETE_URL)
         self.assertFalse(Note.objects.filter(id=self.note1.id).exists())
 

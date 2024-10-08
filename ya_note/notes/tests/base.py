@@ -26,17 +26,11 @@ EDIT_URL = reverse('notes:edit', args=[NOTE_SLUG])
 REDIRECT_EDIT_URL = f'{LOGIN_URL}?next={EDIT_URL}'
 
 
-def get_redirect_url(url):
-    return f'{LOGIN_URL}?next={url}'
-
-
 class BaseTestData(TestCase):
 
     @classmethod
     def setUpTestData(cls):
         """Подготовка данных для всех тестов."""
-        super().setUp(cls)
-
         cls.user1 = User.objects.create(username='Лев Толстой')
         cls.user2 = User.objects.create(username='Фёдор Достоевский')
         cls.note1 = Note.objects.create(title='Заметка 1',
@@ -53,5 +47,3 @@ class BaseTestData(TestCase):
 
         cls.client_user2 = cls.client_class()
         cls.client_user2.force_login(cls.user2)
-
-        cls.client_anonymous = cls.client_class()
