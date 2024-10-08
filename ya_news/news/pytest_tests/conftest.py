@@ -1,10 +1,10 @@
 from datetime import timedelta
-from django.utils import timezone
 
 import pytest
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from news.models import Comment, News
 
@@ -58,19 +58,14 @@ def comment(news, author):
 
 @pytest.fixture
 def comments(news, author):
-    comments = []
-    Comment._meta.get_field('created').auto_now_add = False
     for i in range(1, 333):
-        comment = Comment(
+        comment = Comment.objects.create(
             text=f'Комментарий {i}',
             news=news,
             author=author,
         )
         comment.created = timezone.now() - timedelta(seconds=i)
-        comments.append(comment)
-    Comment.objects.bulk_create(comments)
-    Comment._meta.get_field('created').auto_now_add = True
-    return comments
+        comment.save(update_fields=['created'])
 
 
 @pytest.fixture

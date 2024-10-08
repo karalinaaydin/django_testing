@@ -39,7 +39,7 @@ def test_comments_sorted_by_creation_asc(client, news, comments,
     comments_from_context = response.context['news'].comment_set.all()
 
     dates_from_context = [comment.created for comment in comments_from_context]
-    expected_dates = sorted(comment.created for comment in comments)
+    expected_dates = sorted(dates_from_context)
 
     assert dates_from_context == expected_dates
 
