@@ -18,6 +18,7 @@ ANONYMOUS = pytest.lazy_fixture('client')
 AUTHOR_CLIENT = pytest.lazy_fixture('author_client')
 NOT_AUTHOR_CLIENT = pytest.lazy_fixture('not_author_client')
 
+
 @pytest.mark.parametrize(
     'parametrized_client, url, expected_status',
     (
@@ -34,8 +35,8 @@ NOT_AUTHOR_CLIENT = pytest.lazy_fixture('not_author_client')
 
         (ANONYMOUS, DELETE_URL, HTTPStatus.FOUND),
         (ANONYMOUS, EDIT_URL, HTTPStatus.FOUND),
-        )
-        )
+    )
+)
 def test_pages_availability_for_different_users(expected_status, url,
                                                 parametrized_client):
     """Тестирует доступность страниц для разных пользователей."""

@@ -1,14 +1,12 @@
-import pytest
-from datetime import datetime
 from datetime import timedelta
 from django.utils import timezone
 
+import pytest
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
 
 from news.models import Comment, News
-from news.forms import BAD_WORDS
 
 
 @pytest.fixture
@@ -72,7 +70,7 @@ def comments(news, author):
         comments.append(comment)
     Comment.objects.bulk_create(comments)
     Comment._meta.get_field('created').auto_now_add = True
-    return Comment.objects.filter(news=news)
+    return comments
 
 
 @pytest.fixture
