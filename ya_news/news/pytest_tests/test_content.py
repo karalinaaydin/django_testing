@@ -38,8 +38,8 @@ def test_comments_sorted_by_creation_asc(client, news, comments,
     response = client.get(news_detail_url)
     comments_from_context = response.context['news'].comment_set.all()
 
-    dates_from_context = list(comments_from_context)
-    expected_dates = sorted(comments, key=lambda comment: comment.created)
+    dates_from_context = [comment.created for comment in comments_from_context]
+    expected_dates = sorted(comment.created for comment in comments)
 
     assert dates_from_context == expected_dates
 
