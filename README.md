@@ -1,52 +1,14 @@
-# Django testing  
-## Если вы успели выполнить все домашние задания — ваш финальный проект готов.
-Перенесите тесты из ваших проектов в данный репозиторий (**django_testing**), который появился в вашем аккаунте.  
-В итоге должна получиться следующая структура репозитория:
-```
-Dev
- └── django_testing
-     ├── ya_news
-     │   ├── news
-     │   │   ├── fixtures/
-     │   │   ├── migrations/
-     │   │   ├── pytest_tests/   <- Директория с вашими тестами pytest для проекта ya_news
-     │   │   ├── __init__.py
-     │   │   ├── admin.py
-     │   │   ├── apps.py
-     │   │   ├── forms.py
-     │   │   ├── models.py
-     │   │   ├── urls.py
-     │   │   └── views.py
-     │   ├── templates/
-     │   ├── yanews/
-     │   ├── manage.py
-     │   └── pytest.ini
-     ├── ya_note
-     │   ├── notes
-     │   │   ├── migrations/
-     │   │   ├── tests/          <- Директория с вашими тестами unittest для проекта ya_note
-     │   │   ├── __init__.py
-     │   │   ├── admin.py
-     │   │   ├── apps.py
-     │   │   ├── forms.py
-     │   │   ├── models.py
-     │   │   ├── urls.py
-     │   │   └── views.py
-     │   ├── templates/
-     │   ├── yanote/
-     │   ├── manage.py
-     │   └── pytest.ini
-     ├── .gitignore
-     ├── README.md
-     ├── requirements.txt
-     └── structure_test.py
-```
+# Ya News and Ya Notes Project - Test Suite
 
-## После копирования тестов, написанных в ходе прохождения спринта, для проверки готовности проекта к сдаче необходимо выполнить 4 действия:
-1. Создать и активировать виртуальное окружение; установить зависимости из файла `requirements.txt`;
-2. Запустить скрипт для `run_tests.sh` из корневой директории проекта:
-```sh
-bash run_tests.sh
-```
+This project focuses on adding comprehensive test coverage for two existing Django applications: Ya News and Ya Notes. The tests were written using both pytest and unittest frameworks to ensure the robustness of the apps by testing the core logic, routes, and content.
 
-**Если все проверки успешно выполнились, проект можно отправлять на ревью.**
+Features:
+.Test Coverage for Core Logic: Tests the internal logic of both Ya News and Ya Notes applications to ensure correctness and reliability.
+.Route Testing: Verifies that all defined routes in the Django applications function correctly, returning the expected responses.
+.Content Validation: Ensures that the apps display the correct content based on various inputs and conditions.
+
+Technologies Used:
+.Django: The web framework used for the Ya News and Ya Notes applications.
+.pytest: A powerful testing framework used for writing flexible, easy-to-read tests.
+.unittest: The built-in Python testing framework used to complement the pytest tests and ensure broad test coverage.
+
